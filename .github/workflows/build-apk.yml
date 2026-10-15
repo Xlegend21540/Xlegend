@@ -30,9 +30,10 @@ jobs:
         uses: google-github-actions/run-gemini-cli@v0.1.22
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: gemini-2.5-flash
+          gemini_model: gemini-3.0-flash   # <-- Change this line to 3.0-flash
           gemini_debug: false
           prompt: |
+
             Inspect the complete web application in this repository.
 
             Your task is to rebuild the existing web application as a genuine
