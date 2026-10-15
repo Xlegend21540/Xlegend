@@ -24,21 +24,20 @@ jobs:
 
       - name: Install Dependencies and Build Web Project
         run: |
-          npm install
-          # Creates the static deployment folder (usually 'dist' or 'build')
+          # Bypasses the strict peer dependency solver bug causing edgesOut crash
+          npm install --legacy-peer-deps
           npm run build --if-present
 
       - name: Inject Mobile Wrapper (Capacitor)
         run: |
-          # Detect build folder dynamically, fallback to root if missing
           BUILD_DIR="dist"
           if [ ! -d "dist" ] && [ -d "build" ]; then BUILD_DIR="build"; fi
           if [ ! -d "dist" ] && [ ! -d "build" ]; then mkdir dist && cp index.html dist/ 2>/dev/null || true; fi
           
-          # Initialize Android platform layer
-          npm install @capacitor/core @capacitor/cli
+          # Force dependencies inside mobile layers to ignore strict peer errors
+          npm install @capacitor/core @capacitor/cli --legacy-peer-deps
           npx cap init "GoogleAIStudioApp" "com.aistudio.app" --web-dir=$BUILD_DIR
-          npm install @capacitor/android
+          npm install @capacitor/android --legacy-peer-deps
           npx cap add android
           npx cap sync android
 
