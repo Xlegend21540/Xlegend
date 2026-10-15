@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Web App to Android APK
 on:
   push:
     branches: [ main, master ]
@@ -11,31 +11,45 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Install Project Dependencies
+      - name: Install Dependencies and Build Web Project
         run: |
-          if [ -f "package.json" ]; then
-            npm install
-            npm run build --if-present
-          fi
+          npm install
+          # Creates the static deployment folder (usually 'dist' or 'build')
+          npm run build --if-present
 
-      - name: Assemble APK Package
+      - name: Inject Mobile Wrapper (Capacitor)
         run: |
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug
-          else
-            echo "No native gradle wrapper found. Please use Option A for web projects."
-            exit 1
-          fi
+          # Detect build folder dynamically, fallback to root if missing
+          BUILD_DIR="dist"
+          if [ ! -d "dist" ] && [ -d "build" ]; then BUILD_DIR="build"; fi
+          if [ ! -d "dist" ] && [ ! -d "build" ]; then mkdir dist && cp index.html dist/ 2>/dev/null || true; fi
+          
+          # Initialize Android platform layer
+          npm install @capacitor/core @capacitor/cli
+          npx cap init "GoogleAIStudioApp" "com.aistudio.app" --web-dir=$BUILD_DIR
+          npm install @capacitor/android
+          npx cap add android
+          npx cap sync android
+
+      - name: Compile to APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: my-app-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-compiled-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
