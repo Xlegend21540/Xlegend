@@ -1,0 +1,6 @@
+{
+  "name": "OneFiles - One UI File Manager",
+  "description": "Mobile-first Samsung One UI styled file manager PWA with folder color tagging, collapsible headers, in-app editor, and smooth spring animations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

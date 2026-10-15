@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFA826"/>
+      <stop offset="100%" stop-color="#F57C00"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <!-- Squircle Base for One UI icon -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  
+  <!-- Folder shape inside -->
+  <g filter="url(#shadow)" transform="translate(64, 80)">
+    <!-- Back tab -->
+    <path d="M40 70 C40 50, 56 34, 76 34 L160 34 C175 34, 188 42, 196 56 L216 90 L344 90 C364 90, 380 106, 380 126 L380 280 C380 300, 364 316, 344 316 L40 316 C20 316, 4 300, 4 280 L4 106 C4 86, 20 70, 40 70 Z" fill="#F8B133"/>
+    
+    <!-- Paper insert -->
+    <rect x="50" y="80" width="284" height="150" rx="16" fill="#FFFFFF" opacity="0.95"/>
+    <rect x="76" y="112" width="120" height="12" rx="6" fill="#93C5FD"/>
+    <rect x="76" y="136" width="180" height="10" rx="5" fill="#E2E8F0"/>
+    <rect x="76" y="156" width="150" height="10" rx="5" fill="#E2E8F0"/>
+
+    <!-- Front tab / pocket -->
+    <path d="M4 140 C4 122, 18 108, 36 108 L348 108 C366 108, 380 122, 380 140 L380 280 C380 302, 362 320, 340 320 L44 320 C22 320, 4 302, 4 280 Z" fill="url(#folderGrad)"/>
+  </g>
+</svg>
