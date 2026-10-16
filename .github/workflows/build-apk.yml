@@ -19,52 +19,49 @@ jobs:
   build-apk:
     name: Compile & Package Installable Android APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Setup Node.js Environment
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
-      - name: Set up Java JDK 21 (Required for AGP 8.13+ & Capacitor 8)
+      - name: Set up Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-read-only: false
-
-      - name: Accept Android SDK Licenses
+      - name: Accept Android SDK Licenses & Setup Environment
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          mkdir -p "$ANDROID_HOME/licenses" || true
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "84831b9409646a323e44406f890201907eab794b" >> "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Install Node Dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Sync Capacitor Android Project
+      - name: Prepare Android Platform
         run: |
           if [ ! -d "android" ]; then
-            echo "Creating Capacitor Android platform..."
+            echo "Initializing Capacitor Android platform..."
             npx cap add android
           else
-            echo "Syncing existing Android platform..."
+            echo "Existing Android platform detected. Syncing..."
           fi
           npx cap sync android
 
-      - name: Ensure Android Permissions in Manifest
+      - name: Configure Storage Access Permissions in AndroidManifest
         run: |
           node -e '
             const fs = require("fs");
@@ -104,25 +101,26 @@ jobs:
             });
             
             fs.writeFileSync(manifestPath, xml, "utf8");
-            console.log("AndroidManifest.xml verified with all file manager permissions.");
+            console.log("AndroidManifest.xml verified.");
           '
 
-      - name: Build Debug APK with Gradle
+      - name: Compile Debug APK with Gradle
         working-directory: ./android
         run: |
+          sed -i -e 's/\r$//' ./gradlew
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=512m"
 
       - name: Stage APK for Upload
         run: |
           mkdir -p output-apk
           APK_FILE=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
-          if [ -f "$APK_FILE" ]; then
-            echo "Found APK at: $APK_FILE"
+          if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
+            echo "Found APK: $APK_FILE"
             cp "$APK_FILE" output-apk/LegendFile-v1.0.0-debug.apk
             ls -lh output-apk/LegendFile-v1.0.0-debug.apk
           else
-            echo "ERROR: APK file not found!"
+            echo "ERROR: APK not found! Listing outputs directory:"
             find android/app/build/outputs/ -type f || true
             exit 1
           fi
