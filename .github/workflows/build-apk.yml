@@ -2,14 +2,12 @@ name: Build Android APK - Legend File
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: ['**']
   pull_request:
-    branches:
-      - main
-      - master
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,28 +36,35 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Accept Android SDK Licenses & Setup Environment
+      - name: Pre-accept Android SDK Licenses
         run: |
           mkdir -p "$ANDROID_HOME/licenses" || true
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$ANDROID_HOME/licenses/android-sdk-license"
-          echo "84831b9409646a323e44406f890201907eab794b" >> "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          printf "24333f8a63b6825ea9c5514f83c2829b004d1fee\nd56f5187479451eabf01fb78af6dfcb131a6481e\n" > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf "84831b9409646a323e44406f890201907eab794b\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
-      - name: Install Dependencies
+      - name: Install Node Dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Prepare Android Platform
+      - name: Prepare Capacitor Android Shell
         run: |
           if [ ! -d "android" ]; then
             echo "Initializing Capacitor Android platform..."
             npx cap add android
           else
-            echo "Existing Android platform detected. Syncing..."
+            echo "Existing Android platform detected."
           fi
           npx cap sync android
+
+      - name: Patch Android SDK to Stable Android 15 (API 35)
+        run: |
+          if [ -f "android/variables.gradle" ]; then
+            sed -i 's/compileSdkVersion = 36/compileSdkVersion = 35/g' android/variables.gradle
+            sed -i 's/targetSdkVersion = 36/targetSdkVersion = 35/g' android/variables.gradle
+            echo "Patched android/variables.gradle to SDK 35."
+          fi
 
       - name: Configure Storage Access Permissions in AndroidManifest
         run: |
@@ -104,7 +109,7 @@ jobs:
             console.log("AndroidManifest.xml verified.");
           '
 
-      - name: Compile Debug APK with Gradle
+      - name: Build Debug APK with Gradle
         working-directory: ./android
         run: |
           sed -i -e 's/\r$//' ./gradlew
@@ -119,6 +124,8 @@ jobs:
             echo "Found APK: $APK_FILE"
             cp "$APK_FILE" output-apk/LegendFile-v1.0.0-debug.apk
             ls -lh output-apk/LegendFile-v1.0.0-debug.apk
+            echo "### 🚀 Android APK Compiled Successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "Your installable APK is ready. Download **LegendFile-Android-APK** from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
           else
             echo "ERROR: APK not found! Listing outputs directory:"
             find android/app/build/outputs/ -type f || true
